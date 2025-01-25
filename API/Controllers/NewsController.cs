@@ -1,5 +1,6 @@
 using System;
 using Core.Entities;
+using Core.Interfaces;
 using Infrastructure.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -8,26 +9,22 @@ namespace API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class NewsController : ControllerBase
+public class NewsController(INewsRepository repo) : ControllerBase
 {
-    private readonly StoreContext context;
 
-    public NewsController(StoreContext context)
-    {
-        this.context = context;
-    }
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<News>>> GetNews()
+    public async Task<ActionResult<IReadOnlyList<News>>> GetNews()
     {
-        return await context.News.ToListAsync();
+        return Ok(await repo.GetNewsAsync());
     }
 
     [HttpGet("{id:int}")] //api/news/2
     public async Task<ActionResult<News>> GetNewsItem(int id)
     {
-        var newsItem = await context.News.FindAsync(id);
+        var newsItem = await repo.GetNewsByIdAsync(id);
 
         if (newsItem == null) return NotFound();
+
         return newsItem;
     }
 
@@ -36,9 +33,14 @@ public class NewsController : ControllerBase
     {
         news.CreateDate = DateTime.Now;
         news.UpdateDate = DateTime.Now;
-        context.News.Add(news);
-        await context.SaveChangesAsync();
-        return news;
+
+        repo.AddNews(news);
+
+        if (await repo.SaveChangesAsync())
+        {
+            return CreatedAtAction("GetNewsItem", new { id = news.Id }, news);
+        }
+        return BadRequest("Problem creating product");
     }
 
     [HttpPut("{id:int}")]
@@ -48,27 +50,31 @@ public class NewsController : ControllerBase
         if (news.Id != id || !NewsExists(id))
             return BadRequest("Cannot update this News");
 
-        context.Entry(news).State = EntityState.Modified;
+        repo.UpdateNews(news);
 
-        await context.SaveChangesAsync();
-        return NoContent();
+        if (await repo.SaveChangesAsync())
+        {
+            return NoContent();
+        }
+        return BadRequest("problem updating the news");
     }
 
     [HttpDelete("{id:int}")]
     public async Task<ActionResult> DeleteNews(int id)
     {
-        var news = await context.News.FindAsync(id);
+        var news = await repo.GetNewsByIdAsync(id);
 
         if (news == null) return NotFound();
 
-        context.News.Remove(news);
-
-        await context.SaveChangesAsync();
-
-        return NoContent();
+        repo.DeleteNews(news);
+        if (await repo.SaveChangesAsync())
+        {
+            return NoContent();
+        }
+        return BadRequest("problem updating the news");
     }
     private bool NewsExists(int id)
     {
-        return context.News.Any(x => x.Id == id);
+        return repo.NewsExists(id);
     }
 }
