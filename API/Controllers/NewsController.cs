@@ -13,10 +13,12 @@ public class NewsController(INewsRepository repo) : ControllerBase
 {
 
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<News>>> GetNews(string? title, string? description,string? sort)
+    public async Task<ActionResult<IReadOnlyList<News>>> GetNews(string? title, string? description, string? sort)
     {
-        return Ok(await repo.GetNewsAsync(title, description,sort));
+        return Ok(await repo.GetNewsAsync(title, description, sort));
     }
+
+
 
     [HttpGet("{id:int}")] //api/news/2
     public async Task<ActionResult<News>> GetNewsItem(int id)
