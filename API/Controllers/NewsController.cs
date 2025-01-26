@@ -13,9 +13,9 @@ public class NewsController(INewsRepository repo) : ControllerBase
 {
 
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<News>>> GetNews()
+    public async Task<ActionResult<IReadOnlyList<News>>> GetNews(string? title, string? description,string? sort)
     {
-        return Ok(await repo.GetNewsAsync());
+        return Ok(await repo.GetNewsAsync(title, description,sort));
     }
 
     [HttpGet("{id:int}")] //api/news/2
@@ -73,8 +73,24 @@ public class NewsController(INewsRepository repo) : ControllerBase
         }
         return BadRequest("problem updating the news");
     }
+
+    [HttpGet("Titles")]
+    public async Task<ActionResult<IReadOnlyList<string>>> GetTitle()
+    {
+        return Ok(await repo.GetTitlesAsync());
+    }
+
+    [HttpGet("Descriptions")]
+    public async Task<ActionResult<IReadOnlyList<string>>> GetDescriptions()
+    {
+        return Ok(await repo.GetDescriptionsAsync());
+    }
+
+
     private bool NewsExists(int id)
     {
         return repo.NewsExists(id);
     }
+
+
 }

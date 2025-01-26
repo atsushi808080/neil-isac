@@ -23,9 +23,24 @@ public class NewRepository(StoreContext context) : INewsRepository
         return await context.News.FindAsync(id);
     }
 
-    public async Task<IReadOnlyList<News>> GetNewsAsync()
+    public async Task<IReadOnlyList<News>> GetNewsAsync(string? title, string? description, string? sort)
     {
-       return await context.News.ToListAsync();
+        var query = context.News.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(title))
+            query = query.Where(x => x.Title == title);
+
+        if (!string.IsNullOrWhiteSpace(description))
+            query = query.Where(x => x.Description == description);
+
+        query = sort switch
+        {
+            "sortAsc" => query.OrderBy(x => x.Sort),
+            "sortDesc" => query.OrderByDescending(x => x.Sort),
+            _ => query.OrderBy(x => x.Title)
+        };
+
+        return await query.ToListAsync();
     }
 
     public async Task<bool> SaveChangesAsync()
@@ -40,6 +55,20 @@ public class NewRepository(StoreContext context) : INewsRepository
     }
     public bool NewsExists(int id)
     {
-        return context.News.Any(x=>x.Id == id);
+        return context.News.Any(x => x.Id == id);
+    }
+
+    public async Task<IReadOnlyList<string>> GetTitlesAsync()
+    {
+        return await context.News.Select(x => x.Title)
+        .Distinct()
+        .ToListAsync();
+    }
+
+    public async Task<IReadOnlyList<string>> GetDescriptionsAsync()
+    {
+        return await context.News.Select(x => x.Description)
+       .Distinct()
+       .ToListAsync();
     }
 }
